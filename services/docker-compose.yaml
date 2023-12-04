@@ -1,0 +1,198 @@
+version: '3.7'
+name: marsy-team-e
+services:
+  weather:
+    build:
+      context: weather
+      dockerfile: Dockerfile
+    container_name: team-e-weather
+    ports:
+      - '3000:3000'
+    environment:
+      - LAUNCH_READINESS=true
+      - PORT=3000
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  rocketstatus:
+    build:
+      context: rocketstatus
+      dockerfile: Dockerfile
+    container_name: team-e-rocketstatus
+    depends_on:
+      - rocketstatus-database
+    ports:
+      - '3001:3001'
+    environment:
+      - PORT=3001
+      - MONGO_HOST=rocketstatus-database
+      - MONGO_PORT=27017
+      - MONGO_DB=rocketstatus
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  missioncontrol:
+    build:
+      context: missioncontrol
+      dockerfile: Dockerfile
+    container_name: team-e-missioncontrol
+    ports:
+      - '3002:3002'
+    environment:
+      - PORT=3002
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  rocketdepartment:
+    build:
+      context: rocketdepartment
+      dockerfile: Dockerfile
+    container_name: team-e-rocketdepartment
+    ports:
+      - '3003:3003'
+    environment:
+      - PORT=3003
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  customercargo:
+    build:
+      context: customercargo
+      dockerfile: Dockerfile
+    container_name: team-e-customercargo
+    ports:
+      - '3004:3004'
+    environment:
+      - PORT=3004
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  rocket:
+    build:
+      context: rocket
+      dockerfile: Dockerfile
+    container_name: team-e-rocket
+    ports:
+      - '3005:3005'
+    environment:
+      - PORT=3005
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  booster:
+    build:
+      context: booster
+      dockerfile: Dockerfile
+    container_name: team-e-booster
+    ports:
+      - '3006:3006'
+    environment:
+      - PORT=3006
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  payload:
+    build:
+      context: payload
+      dockerfile: Dockerfile
+    container_name: team-e-payload
+    ports:
+      - '3007:3007'
+    environment:
+      - PORT=3007
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  logger:
+    build:
+      context: logger
+      dockerfile: Dockerfile
+    container_name: team-e-logger
+    ports:
+      - '3008:3008'
+    depends_on:
+      - logger-database
+    environment:
+      - PORT=3008
+      - MONGO_HOST=logger-database
+      - MONGO_PORT=27017
+      - MONGO_DB=logger
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  streaming:
+    build:
+      context: streaming
+      dockerfile: Dockerfile
+    container_name: team-e-streaming
+    ports:
+      - '3009:3009'
+    environment:
+      - PORT=3009
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  crew:
+    build:
+      context: crew
+      dockerfile: Dockerfile
+    container_name: team-e-crew
+    ports:
+      - '3010:3010'
+    environment:
+      - PORT=3010
+      - MONGO_HOST=crew-database
+      - MONGO_PORT=27017
+      - MONGO_DB=crew
+    env_file:
+      - .env
+    networks:
+      - marsy-team-e-network
+  crew-database:
+    image: mongo:4.4.18
+    container_name: team-e-crew-database
+    restart: always
+    ports:
+      - '27019:27017'
+    volumes:
+      - crew-database:/data/db
+    networks:
+      - marsy-team-e-network
+  rocketstatus-database:
+    image: mongo:4.4.18
+    container_name: team-e-rocketstatus_database
+    restart: always
+    ports:
+      - '27017:27017'
+    volumes:
+      - rocketstatus_database:/data/db
+    networks:
+      - marsy-team-e-network
+  logger-database:
+    image: mongo:4.4.18
+    container_name: team-e-logger_database
+    restart: always
+    ports:
+      - '27018:27017'
+    volumes:
+      - logger_database:/data/db
+    networks:
+      - marsy-team-e-network
+volumes:
+  rocketstatus_database: null
+  logger_database: null
+  crew-database: null
+networks:
+  marsy-team-e-network:
+    name: marsy-team-e-network
+    driver: bridge

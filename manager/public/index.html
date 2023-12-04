@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Service Status</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .status {
+            width: 1rem;
+            aspect-ratio: 1;
+            display: flex;
+            background: black;
+            border-radius: 50%;
+        }
+
+        .status.up {
+            background: green;
+        }
+
+        .status.down {
+            background: red;
+        }
+
+        .service {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-dark text-light">
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1>Services</h1>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary btn-block disabled" data-default="Sauvegarde automatique"
+                            id="saving">Sauvegarde automatique
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="col-12" id="services"></div>
+    </div>
+</div>
+
+<!-- jQuery and Bootstrap JS -->
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const URL = window.location.href;
+    let services = {};
+    const POOL_TIME = 5000;
+
+    function addService(name, port) {
+        const createDivWithClass = className => {
+            let div = document.createElement("div");
+            div.className = className;
+            return div;
+        };
+
+        let card = createDivWithClass("card text-dark mb-2")
+        let cardBody = createDivWithClass("card-body row align-items-center py-1 px-3")
+        let colAuto = createDivWithClass("col-auto");
+        let status = createDivWithClass("status");
+        let col = createDivWithClass("col");
+
+
+        let service = document.createElement("span");
+        service.className = "service";
+        service.textContent = name;
+
+        let link = document.createElement("a");
+        link.className = "px-2"
+        link.href = URL.substring(0, URL.length - 1) + ":" + port + "/api-docs/"
+        link.target = "_BLANK"
+        link.innerText = URL.substring(0, URL.length - 1) + ":" + port
+
+        col.innerHTML = service.outerHTML
+            + " service" + link.outerHTML
+
+        let colAuto2 = createDivWithClass("col-auto");
+        let label = document.createElement("label");
+        let input = document.createElement("input");
+
+        input.className = "input-group-text d-inline";
+        input.type = "number";
+        input.value = port;
+        input.min = 1;
+        input.max = 65535;
+
+        label.appendChild(input);
+        colAuto2.appendChild(label);
+        colAuto.appendChild(status);
+        cardBody.appendChild(colAuto);
+        cardBody.appendChild(col);
+        cardBody.appendChild(colAuto2);
+        card.appendChild(cardBody);
+
+        let services = document.getElementById("services");
+        services.appendChild(card);
+
+        return {name, input, status};
+    }
+
+
+    const loadServices = () => new Promise((resolve) => {
+        axios.get(`${URL}services`).then(response =>
+            response.data.forEach(service => {
+                let {name, input, status} = addService(service.name, service.port);
+                services[name] = {
+                    "port": input,
+                    "status": status,
+                }
+            })
+        ).then(resolve);
+    })
+
+    loadServices().then(() => {
+        Object.values(services).forEach(service => service.port.addEventListener("change", () => save()));
+
+        function checkStatus() {
+            Object.values(services).forEach(service => {
+                axios.post(`${URL}is-alive`, {name: service.name, port: service.port.value}).then(response => {
+                    service.status.classList.remove("up");
+                    service.status.classList.remove("down");
+                    service.status.classList.add(response.data.isAlive ? "up" : "down");
+                })
+            })
+        }
+
+        checkStatus()
+        setInterval(checkStatus, POOL_TIME);
+    })
+
+    function save() {
+        const savingButton = document.getElementById("saving");
+        let ports = Object.values(services).map(service => service.port.value);
+        if (new Set(ports).size !== ports.length) {
+            savingButton.classList.remove("btn-success");
+            savingButton.classList.remove("btn-primary");
+            savingButton.classList.add("btn-danger");
+            savingButton.innerText = "Ports dupliqués"
+            return;
+        }
+        savingButton.classList.remove("btn-danger");
+        savingButton.classList.remove("btn-primary");
+        savingButton.classList.add("btn-success");
+        savingButton.innerText = "Sauvegarde en cours..."
+
+        let updatedServices = Object.keys(services).map(service => ({
+            service: service,
+            port: services[service].port.value
+        }))
+
+        axios.post(`${URL}update`, {updatedServices}).then(() => setTimeout(() => {
+            savingButton.classList.remove("btn-success");
+            savingButton.classList.add("btn-primary");
+            savingButton.innerText = savingButton.getAttribute("data-default");
+        }, 500)).catch(() => {
+            savingButton.classList.remove("btn-success");
+            savingButton.classList.add("btn-danger");
+            savingButton.innerText = "Impossible de sauvegarder"
+        });
+    }
+</script>
+</body>
+</html>

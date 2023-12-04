@@ -1,0 +1,17 @@
+.idea
+*/*.iml
+*/node_modules
+*/.eslintrc
+*/package-lock.json
+*/src/swagger_output.json
+*/logs
+
+services/*/node_modules/*
+services/*/node_modules
+services/*/package-lock.json
+services/*/src/swagger_output.json
+
+
+.DS_Store
+
+logs/

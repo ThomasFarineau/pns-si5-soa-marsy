@@ -1,0 +1,39 @@
+version: '3.7'
+name: "marsy-team-e-kafka"
+services:
+  kafka:
+    image: docker.io/bitnami/kafka:3.5
+    container_name: team-e-broker-kafka
+    networks:
+      - marsy-team-e-network
+    ports:
+      - "9092"
+    env_file:
+      - .env.kafka
+
+  kafka-setup:
+    image: docker.io/bitnami/kafka:3.5
+    container_name: team-e-broker-kafka-setup
+    depends_on:
+      - kafka
+    entrypoint: [ '/bin/sh', '-c' ]
+    networks:
+      - marsy-team-e-network
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics.sh --bootstrap-server kafka:9092 --list
+      
+      echo -e 'Creating kafka topics'
+      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic rocket --replication-factor 1 --partitions 1
+      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic booster --replication-factor 1 --partitions 1
+      kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic emergency --replication-factor 1 --partitions 1
+      
+      echo -e 'Successfully created the following topics:'
+      kafka-topics.sh --bootstrap-server kafka:9092 --list
+      "
+
+networks:
+  marsy-team-e-network:
+    name: marsy-team-e-network
+    driver: bridge
